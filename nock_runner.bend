@@ -44,8 +44,7 @@ all_ok ls = match ls{
     Res/ok: (all_ok ls.tail)
     Res/err: ls.head
   }
-} 
-
+}
 
 assert_eq a b = match a {
   Res/err: match b{
@@ -56,12 +55,11 @@ assert_eq a b = match a {
     Res/err: b
     Res/ok: 
     switch (Nock/Compare a.value b.value){
-      0: (Res/err ["assertion failed",  a,  b])
+      0: (Res/err ["assertion failed",  (unparse a.value),  (unparse b.value)])
       _: (Res/ok "ok")
     }
   }
 }
-
 
 unpack x = match x {
   Res/err: x
@@ -79,9 +77,7 @@ let t = (all_ok[
 ])
 t
 
-
-
-
+# NOCK LANGUAGE SPECIFICATION
 # A noun is an atom or a cell.  An atom is a natural number.  A cell is an ordered pair of nouns.
 
 # Reduce by the first matching pattern; variables match any noun.
@@ -128,24 +124,7 @@ t
 
 # *a                  *a
 
-# slot nck ad = 
-#   switch ad{
-#     0: nck
-#     1: nck
-#     _: match nck{
-#       Nock/Atom: (Nock/Crash "slot atom")
-#       Nock/Cell:
-#         let n = (slot nck (/ ad 2))
-#         match n{
-#           Nock/Atom: (Nock/Crash "slot atom")
-#           Nock/Cell: 
-#           switch (& 1 ad){
-#             0: n.head
-#             _: n.tail
-#           }
-#         }
-#     }
-#   }
+wrap x fn = match x { Res/err: x Res/ok: (fn x.value) }
 
 slot c ad =
   switch ad{
@@ -154,18 +133,10 @@ slot c ad =
     _: match c{
       Nock/Atom: (Res/err "slot atom")
       Nock/Cell:
-        let n = (slot c (/ ad 2))
-        match n{
-          Res/err: n
-          Res/ok: match sa = n.value{
-            Nock/Atom: (Res/err "slot atom")
-            Nock/Cell: 
-            switch (& 1 ad){
-              0: (Res/ok sa.head)
-              _: (Res/ok sa.tail)
-            }
-          }
-        }
+        (wrap (slot c (/ ad 2)) @n match n{
+          Nock/Atom: (Res/err "slot atom")
+          Nock/Cell: (Res/ok switch (& 1 ad){ 0: n.head _: n.tail })
+        })
     }
   }
 
@@ -174,40 +145,50 @@ eval (Nock/Cell core arm) = match arm{
   Nock/Atom: (Res/err "evaluating atom")
   Nock/Cell: match opcode = arm.head{
     Nock/Cell: # unpacking multi instruction
-
-      match first = (eval (Nock/Cell core arm.head)){
-        Res/err: first
-        Res/ok: match second = (eval (Nock/Cell core arm.tail)){
-          Res/err: second
-          Res/ok: (Res/ok (Nock/Cell first.value second.value))
-        }
-      }
+      (wrap (eval (Nock/Cell core arm.head)) @fs (wrap (eval (Nock/Cell core arm.tail)) @sc (Res/ok (Nock/Cell fs sc))))
     Nock/Atom: switch opcode.value{
       0: match ad = arm.tail{
         Nock/Cell: (Res/err ["slot crash on ad", ad])
         Nock/Atom: (slot core ad.value)
       }
       1: (Res/ok arm.tail)
+      2: match ad = arm.tail{
+        Nock/Atom: (Res/err ["eval crash on ad", ad])
+        Nock/Cell: (wrap (eval (Nock/Cell core ad.head)) @fs
+          (wrap (eval (Nock/Cell core ad.tail)) @sc (eval (Nock/Cell fs sc))))
+      }
+      3: (wrap (eval(Nock/Cell core arm.tail)) @ev (parse match ev{ Nock/Atom: 1 Nock/Cell: 0}))
+      4: (wrap (eval(Nock/Cell core arm.tail)) @ev match ev{
+        Nock/Atom: (parse(+ 1 ev.value))
+        Nock/Cell: (Res/err ["inc not defined on cell", ev])
+      })
+      5: match arm.tail{
+        Nock/Atom: (Res/err "eq on atom")
+        Nock/Cell: (wrap (eval (Nock/Cell core arm.tail.head)) @fs
+          (wrap (eval (Nock/Cell core arm.tail.tail)) @sc (parse (- 1 (Nock/Compare fs sc)))))
+      }
       _: (Res/err ["crash: opcode", opcode.value, "not implemented"])
     }
   }
 }
 
+run_nock raw = 
+  match nck = (parse raw){
+    Res/err: nck.message
+    Res/ok: match ev = (eval nck.value){
+      Res/err: ev.message
+      Res/ok: (unparse ev.value)
+    } 
+  }
 
 assert_eval code target = (assert_eq (eval (unpack (parse code))) (parse target))
-
 ucc = (unpack cc)
-
-
-
-
 
 main=
 [
   ["test_parse" (test_parse)]
 
   ["test_eval" (all_ok [
-
     # slot internal
     (assert_eq cc cc)
     (assert_eq (slot ucc 0) (Res/err []))
@@ -224,36 +205,25 @@ main=
     (assert_eval [[1 7] 1 [2 4]] [2 4])
     # unpacking
     (assert_eval [77 [[0 1] [0 1]]] [77 77])
-
-
-
-    # (eval (unpack (parse [[1 2] 0 1])))
-    # (Res/err ["pr" (eval [4 0 2])])
+    (assert_eval [[3 5] [0 1] [1 7]] [[3 5] 7])
+    (assert_eval [[3 5] [0 1] [[1 7] [1 8]]] [[3 5] [7 8]])
+    # eval
+    (assert_eval [[0 1] 0 1] [0 1])
+    (assert_eval [[0 1] 2 [[0 1] 0 1]] [0 1])
+    # check cell
+    (assert_eval [[0 1] 3 [0 1]] 0)
+    (assert_eval [[0 1] 3 [0 2]] 1)
+    (assert_eval [[0 1] 3 [1 2]] 1)
+    # check inc
+    (assert_eval [[0 1] 4 [0 1]] [])
+    (assert_eval [[0 1] 4 [0 3]] 2)
+    (assert_eval [[0 1] 4 [1 3]] 4)
+    # check eq
+    (assert_eval [[0 1] 5 [0 1] [0 1]] 0)
+    (assert_eval [[0 1] 5 [0 1] [0 2]] 1)
+    (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 5]]] 0)
+    (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 6]]] 1)
 
   ])
-  
   ]
-    # (eval (unpack (parse [7 0 7])))
-    # (eval (unpack (parse [7 0 1])))
-    # (eval (unpack (parse [[1 2] 0 1])))
-
-
-  # ["printings" ucc]
 ]
-# let check = (all_ok [
-#   (assert_crash [7 7])
-#   (assert_eval [7 1 22] 22)
-#   (assert_eq (slot (parse [7 1 22]) 1) (parse [7 1 22]))
-#   (assert_eq (slot (parse [7 1 22]) 2) (parse [7]))
-#   (assert_eq (slot (parse [[7 1] 22]) 5) (parse [1]))
-#   (assert_eval [7 0 1] 7)
-#   (assert_eval [[7 7] 0 2] 7)
-#   (assert_eval [[7 7] 0 1] [7 7])
-#   (assert_eval [[[7 6] 7] 0 5] 6)
-
-
-
-# ])
-
-# check
-
