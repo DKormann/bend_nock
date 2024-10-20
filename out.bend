@@ -1,4 +1,8 @@
 
-from nock_runner import run_nock
+# eq a b = (== a b)
 
-main= (run_nock [7 0 1])
+# def main ():
+  # return lambda x a : x + a
+
+main = 
+  lambda x $a : x + a
