@@ -1,0 +1,374 @@
+@List/Cons = (a (b ((@List/Cons/tag (a (b c))) c)))
+
+@List/Cons/tag = 1
+
+@List/Nil = ((@List/Nil/tag a) a)
+
+@List/Nil/tag = 0
+
+@String/Cons = (a (b ((@String/Cons/tag (a (b c))) c)))
+
+@String/Cons/tag = 1
+
+@String/Nil = ((@String/Nil/tag a) a)
+
+@String/Nil/tag = 0
+
+@Tree/Leaf = (a ((@Tree/Leaf/tag (a b)) b))
+
+@Tree/Leaf/tag = 1
+
+@Tree/Node = (a (b ((@Tree/Node/tag (a (b c))) c)))
+
+@Tree/Node/tag = 0
+
+@all = ((@all__C2 a) a)
+
+@all__C0 = (* a)
+  & @all ~ a
+
+@all__C1 = (* (?(((* 0) @all__C0) a) a))
+
+@all__C2 = (?((1 @all__C1) a) a)
+
+@crsh = c
+  & @eval ~ (a (b c))
+  & @Tree/Leaf ~ (1 a)
+  & @Tree/Leaf ~ (1 b)
+
+@eq = ((@eq__C6 a) a)
+
+@eq__C0 = (b (e (a (d i))))
+  & @all ~ (h i)
+  & @List/Cons ~ (c (g h))
+  &!@eq ~ (a (b c))
+  & @List/Cons ~ (f (@List/Nil g))
+  &!@eq ~ (d (e f))
+
+@eq__C1 = (?((@eq__C0 (* (* (* (* 0))))) a) a)
+
+@eq__C2 = (* (a ($([=] $(a b)) b)))
+
+@eq__C3 = (?(((* (* (* 0))) @eq__C2) a) a)
+
+@eq__C4 = (a (b ((@eq__C1 (a (b c))) c)))
+
+@eq__C5 = (* (a ((@eq__C3 (a b)) b)))
+
+@eq__C6 = (?((@eq__C4 @eq__C5) a) a)
+
+@eval = (a ((@eval__C23 (a b)) b))
+
+@eval__C0 = (* (b (a c)))
+  & @slot ~ (a (b c))
+
+@eval__C1 = (?(((* (* (* @crsh))) @eval__C0) a) a)
+
+@eval__C10 = (a (b c))
+  & @eval ~ (a (b (@eval__C6 c)))
+
+@eval__C11 = (?((@eval__C9 (* (* (* @crsh)))) a) a)
+
+@eval__C12 = (a (b c))
+  & @eval ~ (a (b (@eval__C4 c)))
+
+@eval__C13 = (?((@eval__C10 @eval__C11) a) a)
+
+@eval__C14 = (a ((@eval__C3 (a b)) b))
+
+@eval__C15 = (?((@eval__C12 @eval__C13) a) a)
+
+@eval__C16 = (?((@eval__C14 @eval__C15) a) a)
+
+@eval__C17 = (a ((@eval__C1 (a b)) b))
+
+@eval__C18 = (?(((* (a a)) @eval__C16) b) b)
+
+@eval__C19 = (b (c ({a f} (g i))))
+  & @Tree/Node ~ (e (h i))
+  &!@eval ~ (a (d e))
+  & @Tree/Node ~ (b (c d))
+  &!@eval ~ (f (g h))
+
+@eval__C2 = (b (e ({a d} g)))
+  & @eval ~ (c (f g))
+  & @eval ~ (a (b c))
+  & @eval ~ (d (e f))
+
+@eval__C20 = (* (?((@eval__C17 @eval__C18) a) a))
+
+@eval__C21 = (?((@eval__C19 @eval__C20) a) a)
+
+@eval__C22 = ((@eval__C21 (a (b c))) (b (a c)))
+
+@eval__C23 = (?((@eval__C22 (* (* (* @crsh)))) a) a)
+
+@eval__C3 = (?((@eval__C2 (* (* (* @crsh)))) a) a)
+
+@eval__C4 = (?(((* (* 0)) (* (* 1))) a) a)
+
+@eval__C5 = (* (a c))
+  & @Tree/Leaf ~ (b c)
+  & $(a b) ~ [+0x0000001]
+
+@eval__C6 = (?(((* (* @crsh)) @eval__C5) a) a)
+
+@eval__C7 = (b (e ({a d} i)))
+  & @Tree/Leaf ~ (h i)
+  & $(g h) ~ [-0x0000001]
+  & @eq ~ (c (f g))
+  & @eval ~ (a (b c))
+  & @eval ~ (d (e f))
+
+@eval__C8 = (?((@eval__C7 (* (* (* @crsh)))) a) a)
+
+@eval__C9 = (a ((@eval__C8 (a b)) b))
+
+@is_number = ({(@is_number__C0 $([=] $(a b))) (@is_number__C1 a)} b)
+
+@is_number__C0 = (?((1 (* (* (* 0)))) a) a)
+
+@is_number__C1 = (?((0 (* (* (* 1)))) a) a)
+
+@list_all_eq = ((@list_all_eq__C3 a) a)
+
+@list_all_eq__C0 = (* (a (d g)))
+  & @List/Cons ~ (a (f g))
+  & @List/Cons ~ (c (e f))
+  & @String/Cons ~ (33 (b c))
+  & @String/Cons ~ (61 (@String/Nil b))
+  & @List/Cons ~ (d (@List/Nil e))
+
+@list_all_eq__C1 = (* (a (* (* b))))
+  & @list_all_eq ~ (a b)
+
+@list_all_eq__C2 = (* (({a f} {c g}) (e h)))
+  & @eq ~ (b (d ?((@list_all_eq__C0 @list_all_eq__C1) (e (f (g h))))))
+  & @parse ~ (a b)
+  & @parse ~ (c d)
+
+@list_all_eq__C3 = (?((c @list_all_eq__C2) d) d)
+  & @String/Cons ~ (111 (b c))
+  & @String/Cons ~ (107 (a b))
+  & @String/Cons ~ (46 (@String/Nil a))
+
+@list_eval = (a (c f))
+  & @unparse ~ (e f)
+  & @eval ~ (b (d e))
+  & @parse ~ (a b)
+  & @parse ~ (c d)
+
+@main = yf
+  & @List/Cons ~ (vf (xf yf))
+  & @List/Cons ~ (b (h {m {n {s {w {x {db {nb {tb zb}}}}}}}}))
+  & @List/Cons ~ (1 (a b))
+  & @List/Cons ~ (2 (@List/Nil a))
+  & @List/Cons ~ (d (g h))
+  & @List/Cons ~ (4 (c d))
+  & @List/Cons ~ (5 (@List/Nil c))
+  & @List/Cons ~ (f (@List/Nil g))
+  & @List/Cons ~ (6 (e f))
+  & @List/Cons ~ (7 (@List/Nil e))
+  & @list_all_eq ~ (uf vf)
+  & @List/Cons ~ ((j l) (tf uf))
+  & @List/Cons ~ (1 (i j))
+  & @List/Cons ~ (2 (@List/Nil i))
+  & @List/Cons ~ (1 (k l))
+  & @List/Cons ~ (2 (@List/Nil k))
+  & @List/Cons ~ ((m p) (sf tf))
+  & @unparse ~ (o p)
+  & @parse ~ (n o)
+  & @List/Cons ~ ((r 77) (rf sf))
+  & @unparse ~ (q r)
+  & @slot ~ (77 (1 q))
+  & @List/Cons ~ ((v w) (qf rf))
+  & @list_eval ~ (s (u v))
+  & @List/Cons ~ (0 (t u))
+  & @List/Cons ~ (1 (@List/Nil t))
+  & @List/Cons ~ ((ab cb) (pf qf))
+  & @list_eval ~ (x (z ab))
+  & @List/Cons ~ (0 (y z))
+  & @List/Cons ~ (6 (@List/Nil y))
+  & @List/Cons ~ (4 (bb cb))
+  & @List/Cons ~ (5 (@List/Nil bb))
+  & @List/Cons ~ ((gb mb) (of pf))
+  & @list_eval ~ (db (fb gb))
+  & @List/Cons ~ (0 (eb fb))
+  & @List/Cons ~ (3 (@List/Nil eb))
+  & @List/Cons ~ (ib (lb mb))
+  & @List/Cons ~ (4 (hb ib))
+  & @List/Cons ~ (5 (@List/Nil hb))
+  & @List/Cons ~ (kb (@List/Nil lb))
+  & @List/Cons ~ (6 (jb kb))
+  & @List/Cons ~ (7 (@List/Nil jb))
+  & @List/Cons ~ ((qb 6) (nf of))
+  & @list_eval ~ (nb (pb qb))
+  & @List/Cons ~ (1 (ob pb))
+  & @List/Cons ~ (6 (@List/Nil ob))
+  & @List/Cons ~ ((yb bc) (mf nf))
+  & @list_eval ~ (77 (xb yb))
+  & @List/Cons ~ (sb (wb xb))
+  & @List/Cons ~ (1 (rb sb))
+  & @List/Cons ~ (2 (@List/Nil rb))
+  & @List/Cons ~ (vb (@List/Nil wb))
+  & @List/Cons ~ (1 (ub vb))
+  & @List/Cons ~ (tb (@List/Nil ub))
+  & @List/Cons ~ (2 (ac bc))
+  & @List/Cons ~ (zb (@List/Nil ac))
+  & @List/Cons ~ ((lc 1) (lf mf))
+  & @list_eval ~ (dc (kc lc))
+  & @List/Cons ~ (1 (cc dc))
+  & @List/Cons ~ (1 (@List/Nil cc))
+  & @List/Cons ~ (2 (jc kc))
+  & @List/Cons ~ (fc (ic jc))
+  & @List/Cons ~ (1 (ec fc))
+  & @List/Cons ~ (7 (@List/Nil ec))
+  & @List/Cons ~ (hc (@List/Nil ic))
+  & @List/Cons ~ (0 (gc hc))
+  & @List/Cons ~ (1 (@List/Nil gc))
+  & @List/Cons ~ ((vc 7) (kf lf))
+  & @list_eval ~ (nc (uc vc))
+  & @List/Cons ~ (0 (mc nc))
+  & @List/Cons ~ (1 (@List/Nil mc))
+  & @List/Cons ~ (2 (tc uc))
+  & @List/Cons ~ (pc (sc tc))
+  & @List/Cons ~ (1 (oc pc))
+  & @List/Cons ~ (7 (@List/Nil oc))
+  & @List/Cons ~ (rc (@List/Nil sc))
+  & @List/Cons ~ (0 (qc rc))
+  & @List/Cons ~ (1 (@List/Nil qc))
+  & @List/Cons ~ ((jd ld) (jf kf))
+  & @list_eval ~ (bd (id jd))
+  & @List/Cons ~ (xc (ad bd))
+  & @List/Cons ~ (0 (wc xc))
+  & @List/Cons ~ (1 (@List/Nil wc))
+  & @List/Cons ~ (zc (@List/Nil ad))
+  & @List/Cons ~ (1 (yc zc))
+  & @List/Cons ~ (22 (@List/Nil yc))
+  & @List/Cons ~ (2 (hd id))
+  & @List/Cons ~ (dd (gd hd))
+  & @List/Cons ~ (1 (cd dd))
+  & @List/Cons ~ (7 (@List/Nil cd))
+  & @List/Cons ~ (fd (@List/Nil gd))
+  & @List/Cons ~ (0 (ed fd))
+  & @List/Cons ~ (1 (@List/Nil ed))
+  & @List/Cons ~ (7 (kd ld))
+  & @List/Cons ~ (22 (@List/Nil kd))
+  & @List/Cons ~ ((sd 1) (if jf))
+  & @list_eval ~ (nd (rd sd))
+  & @List/Cons ~ (1 (md nd))
+  & @List/Cons ~ (1 (@List/Nil md))
+  & @List/Cons ~ (3 (qd rd))
+  & @List/Cons ~ (pd (@List/Nil qd))
+  & @List/Cons ~ (1 (od pd))
+  & @List/Cons ~ (7 (@List/Nil od))
+  & @List/Cons ~ ((zd 0) (hf if))
+  & @list_eval ~ (ud (yd zd))
+  & @List/Cons ~ (0 (td ud))
+  & @List/Cons ~ (1 (@List/Nil td))
+  & @List/Cons ~ (3 (xd yd))
+  & @List/Cons ~ (wd (@List/Nil xd))
+  & @List/Cons ~ (0 (vd wd))
+  & @List/Cons ~ (1 (@List/Nil vd))
+  & @List/Cons ~ ((ge 8) (gf hf))
+  & @list_eval ~ (be (fe ge))
+  & @List/Cons ~ (1 (ae be))
+  & @List/Cons ~ (1 (@List/Nil ae))
+  & @List/Cons ~ (4 (ee fe))
+  & @List/Cons ~ (de (@List/Nil ee))
+  & @List/Cons ~ (1 (ce de))
+  & @List/Cons ~ (7 (@List/Nil ce))
+  & @List/Cons ~ ((le 78) (ff gf))
+  & @list_eval ~ (77 (ke le))
+  & @List/Cons ~ (4 (je ke))
+  & @List/Cons ~ (ie (@List/Nil je))
+  & @List/Cons ~ (0 (he ie))
+  & @List/Cons ~ (1 (@List/Nil he))
+  & @List/Cons ~ ((te 0) (ef ff))
+  & @list_eval ~ (77 (se te))
+  & @List/Cons ~ (5 (re se))
+  & @List/Cons ~ (ne (qe re))
+  & @List/Cons ~ (0 (me ne))
+  & @List/Cons ~ (1 (@List/Nil me))
+  & @List/Cons ~ (pe (@List/Nil qe))
+  & @List/Cons ~ (1 (oe pe))
+  & @List/Cons ~ (77 (@List/Nil oe))
+  & @List/Cons ~ ((bf 1) (df ef))
+  & @list_eval ~ (77 (af bf))
+  & @List/Cons ~ (5 (ze af))
+  & @List/Cons ~ (ve (ye ze))
+  & @List/Cons ~ (0 (ue ve))
+  & @List/Cons ~ (1 (@List/Nil ue))
+  & @List/Cons ~ (xe (@List/Nil ye))
+  & @List/Cons ~ (1 (we xe))
+  & @List/Cons ~ (8 (@List/Nil we))
+  & @List/Cons ~ ((cf 2) (@List/Nil df))
+  & @list_eval ~ (1 (1 cf))
+  & @List/Cons ~ (wf (@List/Nil xf))
+  & @list_eval ~ (1 (1 wf))
+
+@parse = ({a b} c)
+  & @is_number ~ (a ?((@parse__C4 @parse__C5) (b c)))
+
+@parse__C0 = (* (b (c (a f))))
+  & @Tree/Node ~ (a (e f))
+  & @parse ~ (d e)
+  & @List/Cons ~ (b (c d))
+
+@parse__C1 = (?(((a a) @parse__C0) b) b)
+
+@parse__C2 = (* (a ((@parse__C1 (b c)) c)))
+  & @parse ~ (a b)
+
+@parse__C3 = (?((a @parse__C2) b) b)
+  & @Tree/Leaf ~ (@List/Nil a)
+
+@parse__C4 = ((@parse__C3 a) a)
+
+@parse__C5 = (* a)
+  & @Tree/Leaf ~ a
+
+@slot = (a (?((@slot__C9 @slot__C10) (a b)) b))
+
+@slot__C0 = (a (* a))
+
+@slot__C1 = (* (* (a a)))
+
+@slot__C10 = (?(((a a) @slot__C8) b) b)
+
+@slot__C2 = (a (b ($([+0x0000002] $([&0x0000001] ?((@slot__C0 @slot__C1) (a (b c))))) (* (* c)))))
+
+@slot__C3 = (* (* ($([+0x0000002] d) (a (b e)))))
+  & @slot ~ (c (d e))
+  & @Tree/Node ~ (a (b c))
+
+@slot__C4 = (?((@slot__C2 @slot__C3) a) a)
+
+@slot__C5 = ({a f} ({b g} ({$([+0x0000002] $([:/0x0000002] d)) e} h)))
+  & @slot ~ (c (d (@slot__C4 (e (f (g h))))))
+  & @Tree/Node ~ (a (b c))
+
+@slot__C6 = (* (a ($([+0x0000002] c) d)))
+  & @slot ~ (b (c d))
+  & @Tree/Leaf ~ (a b)
+
+@slot__C7 = (?((@slot__C5 @slot__C6) a) a)
+
+@slot__C8 = (a ((@slot__C7 (a b)) b))
+
+@slot__C9 = (a b)
+  & @slot ~ (a (0 b))
+
+@unparse = a
+  & @unparse__fold0 ~ a
+
+@unparse__fold0 = ((@unparse__fold0__C1 a) a)
+
+@unparse__fold0__C0 = (a (c f))
+  & @List/Cons ~ (b (e f))
+  &!@unparse__fold0 ~ (a b)
+  & @List/Cons ~ (d (@List/Nil e))
+  &!@unparse__fold0 ~ (c d)
+
+@unparse__fold0__C1 = (?((@unparse__fold0__C0 (* (a a))) b) b)
+

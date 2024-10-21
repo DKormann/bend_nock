@@ -167,6 +167,30 @@ eval (Nock/Cell core arm) = match arm{
         Nock/Cell: (wrap (eval (Nock/Cell core arm.tail.head)) @fs
           (wrap (eval (Nock/Cell core arm.tail.tail)) @sc (parse (- 1 (Nock/Compare fs sc)))))
       }
+      # *[a 6 b c d]        *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
+      6:
+        # let a = core
+        # let b = arm.tail.head
+        # let c = arm.tail.tail.head
+        # let d = arm.tail.tail.tail.head
+        let a = core
+        let err = (Res/err ["crash: op 6 invalid args", (unparse arm.tail)])
+        match arm.tail{
+          Nock/Atom: err
+          Nock/Cell:
+            let b = arm.tail.head
+            match arm.tail.tail{
+              Nock/Atom: err
+              Nock/Cell:
+                match arm.tail.tail
+                let c = arm.tail.tail.head
+                let d = arm.tail.tail.tail
+            }
+
+        }
+
+        (eval (Nock/Cell a (Nock/Cell (Nock/Cell c d) 0 (Nock/Cell (Nock/Cell 2 3) 0 (Nock/Cell a 4 4 b)))))
+
       _: (Res/err ["crash: opcode", opcode.value, "not implemented"])
     }
   }
@@ -223,7 +247,6 @@ main=
     (assert_eval [[0 1] 5 [0 1] [0 2]] 1)
     (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 5]]] 0)
     (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 6]]] 1)
-
   ])
   ]
 ]
