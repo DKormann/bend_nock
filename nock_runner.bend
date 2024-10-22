@@ -63,4 +63,10 @@ eval data formula =
   }
 }
 
-main = eval
+
+run code = match code{
+  List/Cons: (unparse (eval (parse code.head) (parse code.tail)))
+  List/Nil: "nock code must be a cell like [subject code]"
+}
+
+main = (run [55 [2 [[[0 1] 1 0] 1 2 [[[0 4] 4 0 5] 0 3] 1 2 [0 1] 2 [[1 0 5] 0 3][1 0] 4 4 5 [4 0 5] 0 4] 1 2 [0 1] 0 3]])

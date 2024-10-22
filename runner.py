@@ -6,9 +6,9 @@ target_path = sys.argv[1]
 with open(target_path, 'r') as f: nock_code = f.read()
 
 code = f'''
-from nock_runner import run_nock
+from nock_runner import run
 
-main= (run_nock {nock_code})
+main= (run ({nock_code}))
 '''
 
 with open('out.bend', 'w') as f: f.write(code)
