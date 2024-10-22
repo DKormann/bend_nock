@@ -140,6 +140,9 @@ slot c ad =
     }
   }
 
+
+
+
 eval (Nock/Atom value) = (Res/err "evaluating atom")
 eval (Nock/Cell core arm) = match arm{
   Nock/Atom: (Res/err "evaluating atom")
@@ -248,5 +251,6 @@ main=
     (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 5]]] 0)
     (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 6]]] 1)
   ])
-  ]
+    ]
+
 ]
