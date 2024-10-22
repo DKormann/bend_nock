@@ -1,0 +1,14 @@
+target_path=$1
+
+nock_code=$(cat "$target_path")
+
+code=$(cat <<EOF
+from nock_runner import run
+
+main = (run (${nock_code}))
+EOF
+)
+
+echo "$code" > out.bend
+
+bend run-c out.bend
