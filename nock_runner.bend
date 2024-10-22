@@ -1,256 +1,162 @@
-type Nock = (Atom value) | (Cell ~head ~tail)
-type Maybe = (Just value) | Nothing
-type Res = (err message) | (ok value)
+# no error handling just crash
 
-Nock/Compare a b = match a{
-  Nock/Atom: match b{
-    Nock/Atom: (== a.value b.value)
-    Nock/Cell: 0
-  }
-  Nock/Cell: match b{
-    Nock/Atom: 0
-    Nock/Cell: (* (Nock/Compare a.head b.head) (Nock/Compare a.tail b.tail))
-  }
-}
+# parsing
+is_number n = (== match n {List/Cons: 0 List/Nil: 1} match n {List/Cons: 1 List/Nil: 0})
 
-parse list=
-  if ((== match list { List/Cons: 1 List/Nil: 0} match list { List/Cons: 0 List/Nil: 1})){
-    (Res/ok (Nock/Atom list)) # this a number
-  }else{
-    match list {
-      List/Cons:
-        match list.tail {
-          List/Nil: (parse list.head)
-          List/Cons: match head = (parse list.head){
-            Res/err: head
-            Res/ok: match tail = (parse list.tail){
-              Res/err: tail
-              Res/ok: (Res/ok (Nock/Cell head.value tail.value))
-            }
-          }
-        }
-      List/Nil: (Res/err "parse nil")
-    }
-  }
-
-unparse nock = match nock {
-    Nock/Atom: nock.value
-    Nock/Cell: [(unparse nock.head) (unparse nock.tail)]
-  }
-
-all_ok ls = match ls{
-  List/Nil: (Res/ok)
-  List/Cons: match ls.head{
-    Res/ok: (all_ok ls.tail)
-    Res/err: ls.head
-  }
-}
-
-assert_eq a b = match a {
-  Res/err: match b{
-    Res/err: (Res/ok "ok: both err")
-    Res/ok: a
-  }
-  Res/ok: match b{
-    Res/err: b
-    Res/ok: 
-    switch (Nock/Compare a.value b.value){
-      0: (Res/err ["assertion failed",  (unparse a.value),  (unparse b.value)])
-      _: (Res/ok "ok")
+parse list = 
+  if (is_number list) {!list} else{
+  match list{
+  List/Nil: !list
+  List/Cons:
+    let left = (parse list.head)
+    match list.tail{
+      List/Nil: left
+      List/Cons: ![left (parse list.tail)]
     }
   }
 }
 
-unpack x = match x {
-  Res/err: x
-  Res/ok: x.value
+unparse nock = fold nock {Tree/Leaf: nock.value Tree/Node: [nock.left nock.right] }
+
+#core 
+slot ad data =
+switch ad{
+  0: crsh 1: data _: match data{
+    Tree/Leaf: crsh Tree/Node: match d = (slot (/ ad 2) data){
+      Tree/Leaf: crsh Tree/Node: switch (& ad 1) {0: d.left _: d.right} 
+    }
+  }
 }
-cc = (parse [[1 2] [4 5] [6 7]])
 
-test_parse =
-
-let t = (all_ok[
-  (assert_eq (parse 1) (Res/ok (Nock/Atom 1)))
-  (assert_eq (parse [1 2]) (Res/ok (Nock/Cell (Nock/Atom 1) (Nock/Atom 2))))
-  (assert_eq cc cc)
-  (assert_eq (parse (unparse (unpack cc))) (cc))
-])
-t
-
-# NOCK LANGUAGE SPECIFICATION
-# A noun is an atom or a cell.  An atom is a natural number.  A cell is an ordered pair of nouns.
-
-# Reduce by the first matching pattern; variables match any noun.
-
-# nock(a)             *a
-# [a b c]             [a [b c]]
-
-# ?[a b]              0
-# ?a                  1
-# +[a b]              +[a b]
-# +a                  1 + a
-# =[a a]              0
-# =[a b]              1
-
-# /[1 a]              a
-# /[2 a b]            a
-# /[3 a b]            b
-# /[(a + a) b]        /[2 /[a b]]
-# /[(a + a + 1) b]    /[3 /[a b]]
-# /a                  /a
-
-# #[1 a b]            a
-# #[(a + a) b c]      #[a [b /[(a + a + 1) c]] c]
-# #[(a + a + 1) b c]  #[a [/[(a + a) c] b] c]
-# #a                  #a
-
-# *[a [b c] d]        [*[a b c] *[a d]]
-
-# *[a 0 b]            /[b a]
-# *[a 1 b]            b
-# *[a 2 b c]          *[*[a b] *[a c]]
-# *[a 3 b]            ?*[a b]
-# *[a 4 b]            +*[a b]
-# *[a 5 b c]          =[*[a b] *[a c]]
-
-# *[a 6 b c d]        *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
-# *[a 7 b c]          *[*[a b] c]
-# *[a 8 b c]          *[[*[a b] a] c]
-# *[a 9 b c]          *[*[a c] 2 [0 1] 0 b]
-# *[a 10 [b c] d]     #[b *[a c] *[a d]]
-
-# *[a 11 [b c] d]     *[[*[a c] *[a d]] 0 3]
-# *[a 11 b c]         *[a c]
-
-# *a                  *a
-
-wrap x fn = match x { Res/err: x Res/ok: (fn x.value) }
-
-slot c ad =
+edit ad value data = 
   switch ad{
-    0: (Res/err "slot 0")
-    1: (Res/ok c)
-    _: match c{
-      Nock/Atom: (Res/err "slot atom")
-      Nock/Cell:
-        (wrap (slot c (/ ad 2)) @n match n{
-          Nock/Atom: (Res/err "slot atom")
-          Nock/Cell: (Res/ok switch (& 1 ad){ 0: n.head _: n.tail })
-        })
+    0: crsh
+    1: value
+    _: match data{
+      Tree/Leaf: crsh
+      Tree/Node: switch (& ad 1){
+          0: ![data.left (edit (/ad 2) value data.right)]
+          _: ![(edit (/ad 2) value data.left) data.right]
+        }
     }
   }
 
+crsh = (eval !1 !1)
 
+unpack x n =
 
+if (== n 1){x} else { match x{
+Tree/Leaf: crsh
+Tree/Node: (x.left, (unpack x.right (- n 1))) }}
 
-eval (Nock/Atom value) = (Res/err "evaluating atom")
-eval (Nock/Cell core arm) = match arm{
-  Nock/Atom: (Res/err "evaluating atom")
-  Nock/Cell: match opcode = arm.head{
-    Nock/Cell: # unpacking multi instruction
-      (wrap (eval (Nock/Cell core arm.head)) @fs (wrap (eval (Nock/Cell core arm.tail)) @sc (Res/ok (Nock/Cell fs sc))))
-    Nock/Atom: switch opcode.value{
-      0: match ad = arm.tail{
-        Nock/Cell: (Res/err ["slot crash on ad", ad])
-        Nock/Atom: (slot core ad.value)
-      }
-      1: (Res/ok arm.tail)
-      2: match ad = arm.tail{
-        Nock/Atom: (Res/err ["eval crash on ad", ad])
-        Nock/Cell: (wrap (eval (Nock/Cell core ad.head)) @fs
-          (wrap (eval (Nock/Cell core ad.tail)) @sc (eval (Nock/Cell fs sc))))
-      }
-      3: (wrap (eval(Nock/Cell core arm.tail)) @ev (parse match ev{ Nock/Atom: 1 Nock/Cell: 0}))
-      4: (wrap (eval(Nock/Cell core arm.tail)) @ev match ev{
-        Nock/Atom: (parse(+ 1 ev.value))
-        Nock/Cell: (Res/err ["inc not defined on cell", ev])
-      })
-      5: match arm.tail{
-        Nock/Atom: (Res/err "eq on atom")
-        Nock/Cell: (wrap (eval (Nock/Cell core arm.tail.head)) @fs
-          (wrap (eval (Nock/Cell core arm.tail.tail)) @sc (parse (- 1 (Nock/Compare fs sc)))))
-      }
-      # *[a 6 b c d]        *[a *[[c d] 0 *[[2 3] 0 *[a 4 4 b]]]]
-      6:
-        # let a = core
-        # let b = arm.tail.head
-        # let c = arm.tail.tail.head
-        # let d = arm.tail.tail.tail.head
-        let a = core
-        let err = (Res/err ["crash: op 6 invalid args", (unparse arm.tail)])
-        match arm.tail{
-          Nock/Atom: err
-          Nock/Cell:
-            let b = arm.tail.head
-            match arm.tail.tail{
-              Nock/Atom: err
-              Nock/Cell:
-                match arm.tail.tail
-                let c = arm.tail.tail.head
-                let d = arm.tail.tail.tail
-            }
-
-        }
-
-        (eval (Nock/Cell a (Nock/Cell (Nock/Cell c d) 0 (Nock/Cell (Nock/Cell 2 3) 0 (Nock/Cell a 4 4 b)))))
-
-      _: (Res/err ["crash: opcode", opcode.value, "not implemented"])
+eval data formula =
+  match formula {
+  Tree/Leaf: crsh
+  Tree/Node: match formula.left{
+    Tree/Node: ![(eval data formula.left) (eval data formula.right)]
+    Tree/Leaf:
+    switch instruction = formula.left.value{
+      # essentials
+      0: match formula.right {Tree/Node: crsh Tree/Leaf: (slot formula.right.value data)}
+      1: formula.right
+      2: match formula.right {Tree/Leaf: crsh Tree/Node: (eval (eval data formula.right.left) (eval data formula.right.right))}
+      3: match (eval data formula.right) {Tree/Leaf: 1 Tree/Node: 0}
+      4: match ev = (eval data formula.right) {Tree/Leaf: !(+1 ev.value) Tree/Node: crsh}
+      5: match rr=formula.right {Tree/Leaf: crsh Tree/Node: !(- 1 (eq (eval data rr.left) (eval data rr.right)))}
+      # sugars
+      6: let (b, c, d) = (unpack formula.right 3) (eval data (eval ![c d] ![!0 (eval ![!2 !3] ![!0 (eval data ![!4 ![!4 b]])])]))
+      7: let (b, c) = (unpack formula.right 2) (eval (eval data b) c)
+      8: let (b, c) = (unpack formula.right 2) (eval ![(eval data b) data] c)
+      9: let (b, c) = (unpack formula.right 2) (eval (eval data c) ![!2 ![![!0 !1] ![!0 b]]])
+      10: let (b, c, d) = (unpack formula.right 3) match b {Tree/Node: crsh Tree/Leaf: (edit b.value (eval data c) (eval data d)) }
+      11: let (b, c) = (unpack formula.right 2) let res= (eval data c) match b {Tree/Node: if (eq (eval data b.right) !77) {res} else {res} Tree/Leaf: res}
+      _: crsh
     }
   }
 }
 
-run_nock raw = 
-  match nck = (parse raw){
-    Res/err: nck.message
-    Res/ok: match ev = (eval nck.value){
-      Res/err: ev.message
-      Res/ok: (unparse ev.value)
-    } 
+# testing
+
+all ls = match ls{
+  List/Nil: 1
+  List/Cons: switch ls.head{0: 0 _: (all ls.tail) }
+}
+eq a b = match a { Tree/Leaf: match b{ Tree/Leaf: (== a.value b.value) Tree/Node: 0 }
+  Tree/Node: match b { Tree/Leaf: 0 Tree/Node: (all [(eq a.left b.left) (eq a.right b.right)])}
+}
+list_eval data formula = (unparse (eval (parse data) (parse formula)))
+list_all_eq ls = 
+  match ls{
+    List/Nil: "ok."
+    List/Cons:
+      let (a, b) = ls.head
+      if (eq (parse a) (parse b)) {(list_all_eq ls.tail)}
+      else {[a "!=" b]}
   }
 
-assert_eval code target = (assert_eq (eval (unpack (parse code))) (parse target))
-ucc = (unpack cc)
-
-main=
+main = 
+let cc = [[1 2] [4 5] 6 7]
 [
-  ["test_parse" (test_parse)]
-
-  ["test_eval" (all_ok [
-    # slot internal
-    (assert_eq cc cc)
-    (assert_eq (slot ucc 0) (Res/err []))
-    (assert_eq (slot ucc 1) cc)
-    (assert_eval [7 12 33] []) #error
-    (assert_eval [7 0 1] 7)
+  (list_all_eq[
+    # parsing
+    ([1,2], [1,2])
+    (cc, (unparse (parse cc)))
+    ((unparse (slot 1 77)), 77)
     # slot
-    (assert_eval [[1 2] 0 1] [1 2])
-    (assert_eval [[1 2] 0 2] 1)
-    (assert_eval [[1 2] 0 3] 2)
-    (assert_eval [[1 [7 3]] 0 6] 7)
+    ((list_eval cc [0 1]), cc)
+    ((list_eval cc [0 6]), [4,5])
+    ((list_eval cc [0 3]), [[4,5], [6,7]])
     # const
-    (assert_eval [[1 [7 3]] 1 6] 6)
-    (assert_eval [[1 7] 1 [2 4]] [2 4])
-    # unpacking
-    (assert_eval [77 [[0 1] [0 1]]] [77 77])
-    (assert_eval [[3 5] [0 1] [1 7]] [[3 5] 7])
-    (assert_eval [[3 5] [0 1] [[1 7] [1 8]]] [[3 5] [7 8]])
+    ((list_eval cc [1 6]), 6)
+    ((list_eval 77 [[1 2][1 cc]]), [2, cc])
     # eval
-    (assert_eval [[0 1] 0 1] [0 1])
-    (assert_eval [[0 1] 2 [[0 1] 0 1]] [0 1])
-    # check cell
-    (assert_eval [[0 1] 3 [0 1]] 0)
-    (assert_eval [[0 1] 3 [0 2]] 1)
-    (assert_eval [[0 1] 3 [1 2]] 1)
-    # check inc
-    (assert_eval [[0 1] 4 [0 1]] [])
-    (assert_eval [[0 1] 4 [0 3]] 2)
-    (assert_eval [[0 1] 4 [1 3]] 4)
-    # check eq
-    (assert_eval [[0 1] 5 [0 1] [0 1]] 0)
-    (assert_eval [[0 1] 5 [0 1] [0 2]] 1)
-    (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 5]]] 0)
-    (assert_eval [[0 [1 5]] 5 [0 1] [1 [0 1 6]]] 1)
+    ((list_eval [1 1] [2 [1 7] [0 1]]), 1)
+    ((list_eval [0 1] [2 [1 7] [0 1]]), 7)
+    ((list_eval [[0 1] [1 22]] [2 [1 7] [0 1]]), [7 22])
+    # check
+    ((list_eval [1 1] [3 [1 7]]), 1)
+    ((list_eval [0 1] [3 [0 1]]), 0)
+    # inc
+    ((list_eval [1 1] [4 [1 7]]), 8)
+    ((list_eval 77 [4 [0 1]]), 78)
+    # eq
+    ((list_eval 77 [5 [0 1] [1 77]]), 0)
+    ((list_eval 77 [5 [0 1] [1 8]]), 1)
   ])
-    ]
+  
+  # decrement implementation with only essential instructions
+  let decrement = [2 [[[0 1] 1 0] 1 2 [[[0 4] 4 0 5] 0 3] 1 2 [0 1] 2 [[1 0 5] 0 3][1 0] 4 4 5 [4 0 5] 0 4] 1 2 [0 1] 0 3]
+
+  (list_all_eq[
+    ((list_eval 22  decrement), 21)
+    ((list_eval 5  decrement), 4)
+  ])
+
+  (list_all_eq[
+  ((list_eval cc [6 [1 1] [1 2] [1 1]]), 1)
+  ((list_eval cc [6 [1 0] [0 2] [1 1]]), [1 2])
+  ((list_eval cc [6 [1 1] [0 2] [0 6]]), [4 5])
+
+  ((list_eval cc [7 [1 1] [[0 1] [1 22]]]), [1 22])
+  ((list_eval cc [7 [0 1] [[0 1] [0 2]]]), [cc [1 2]])
+
+  ((list_eval 42 [8 [4 0 1] [0 1]]), [43, 42])
+  ((list_eval 42 [8 [4 0 1] [4 0 3]]), 43)
+
+  ((list_eval [0 1] [9 1 0 1]), [0 1])
+  ((list_eval 88 [9 1 [[1 1] [0 1]]]), 88)
+
+  ((unparse(edit 1 !88 !77)), 88)
+  ((unparse(edit 2 !7 ![!1 !2])), [1 7])
+  ((unparse(edit 2 ![!3 !3] ![!1 !2])), [1 3 3])
+
+  ((list_eval cc [10 1 [1 77] [0 1]]), 77)
+  ((list_eval cc [10 6 [1 77] [0 1]]), [[1 2] 77 6 7])
+
+  ((list_eval [3 3] [11 [[88 88] [0 2]] [0 1]]), [3 3])
+  ])
+
+  # (list_eval [0 1] [11 [[88 88] [88 88]] [0 1]])
 
 ]
+
